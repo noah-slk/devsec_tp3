@@ -1,0 +1,55 @@
+name: CI-CD Pipeline
+
+on:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  bandit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install Bandit
+        run: pip install bandit
+
+      - name: Run Bandit security scan
+        run: bandit -r .
+
+  build:
+    needs: bandit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build the Docker image
+        run: docker build -t ghcr.io/${{ github.repository_owner }}/myproject:${{ github.sha }} .
+
+      - name: Push the Docker image
+        run: docker push ghcr.io/${{ github.repository_owner }}/myproject:${{ github.sha }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger deployment on Coolify
+        run: |
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -d '{"ref": "refs/heads/main", "sha": "${{ github.sha }}"}' \
+            https://coolify-webhook-url.example.com/deploy
