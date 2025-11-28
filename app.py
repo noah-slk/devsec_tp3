@@ -80,7 +80,7 @@ def upload():
 # Correct approach: Use environment variable and run under WSGI server (Gunicorn)
 if __name__ == '__main__':
     debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
-    host = os.getenv('HOST', '0.0.0.0')
+    host = os.getenv('HOST', '127.0.0.1')
     port = int(os.getenv('PORT', 5000))
     app.run(debug=debug, host=host, port=port)
 
